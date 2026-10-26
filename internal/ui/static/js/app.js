@@ -588,7 +588,8 @@ function markPageAsReadAction() {
         const showOnlyUnread = element?.dataset.showOnlyUnread || false;
 
         if (showOnlyUnread) {
-            window.location.reload();
+            // Navigate so the new unread entries start at the top instead of restoring the scroll position.
+            window.location.href = window.location.href;
         } else {
             goToPage("next", true);
         }
