@@ -4,11 +4,15 @@
 package ui // import "miniflux.app/v2/internal/ui"
 
 import (
+	"context"
+	"crypto/tls"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"miniflux.app/v2/internal/config"
+	"miniflux.app/v2/internal/http/request"
+	"miniflux.app/v2/internal/model"
 )
 
 func configureTestOptions(t *testing.T, env map[string]string) {
@@ -34,19 +38,30 @@ func TestSetPreferencesCookie(t *testing.T) {
 	scenarios := []struct {
 		name       string
 		env        map[string]string
+		proxyHTTPS bool
+		nativeTLS  bool
 		wantPath   string
 		wantSecure bool
 	}{
-		{"defaults", map[string]string{}, "/", false},
-		{"base path over HTTPS", map[string]string{"BASE_URL": "https://example.org/reader", "HTTPS": "1"}, "/reader", true},
+		{"defaults", map[string]string{}, false, false, "/", false},
+		{"base path over HTTPS", map[string]string{"BASE_URL": "https://example.org/reader", "HTTPS": "1"}, false, false, "/reader", true},
+		{"trusted proxy HTTPS", map[string]string{"HTTPS": "0"}, true, false, "/", true},
+		{"native TLS", map[string]string{"HTTPS": "0"}, false, true, "/", true},
 	}
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.name, func(t *testing.T) {
 			configureTestOptions(t, scenario.env)
 
+			r := httptest.NewRequest(http.MethodGet, "http://example.org/", nil)
+			if scenario.proxyHTTPS {
+				r = r.WithContext(context.WithValue(r.Context(), request.HTTPSProxyContextKey, true))
+			}
+			if scenario.nativeTLS {
+				r.TLS = &tls.ConnectionState{}
+			}
 			w := httptest.NewRecorder()
-			setPreferencesCookie(w, "de_DE", "dark_serif")
+			setPreferencesCookie(w, r, "de_DE", "dark_serif")
 
 			cookies := w.Result().Cookies()
 			if len(cookies) != 1 {
@@ -65,6 +80,17 @@ func TestSetPreferencesCookie(t *testing.T) {
 			}
 			if !cookie.HttpOnly || cookie.SameSite != http.SameSiteLaxMode {
 				t.Errorf(`Expected an HttpOnly cookie with SameSite=Lax`)
+			}
+
+			session, secret := model.NewWebSession("test-agent", "127.0.0.1")
+			sessionRecorder := httptest.NewRecorder()
+			setSessionCookie(sessionRecorder, r, session, secret)
+			sessionCookies := sessionRecorder.Result().Cookies()
+			if len(sessionCookies) != 1 {
+				t.Fatalf("Expected one session cookie, got %d", len(sessionCookies))
+			}
+			if sessionCookies[0].Secure != scenario.wantSecure {
+				t.Errorf("Session cookie Secure = %v, want %v", sessionCookies[0].Secure, scenario.wantSecure)
 			}
 		})
 	}

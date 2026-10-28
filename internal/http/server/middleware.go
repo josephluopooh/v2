@@ -21,10 +21,9 @@ func middleware(next http.Handler) http.Handler {
 		clientIP := request.FindClientIP(r, isTrustedProxyClientIP, trustedNetworks)
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, request.ClientIPContextKey, clientIP)
-
-		if isTrustedProxyClientIP && r.Header.Get("X-Forwarded-Proto") == "https" {
-			config.Opts.SetHTTPSValue(true)
-		}
+		ctx = context.WithValue(ctx, request.HTTPSProxyContextKey,
+			isTrustedProxyClientIP && r.Header.Get("X-Forwarded-Proto") == "https")
+		r = r.WithContext(ctx)
 
 		t1 := time.Now()
 		defer func() {
@@ -39,10 +38,10 @@ func middleware(next http.Handler) http.Handler {
 			)
 		}()
 
-		if config.Opts.HTTPS() && config.Opts.HasHSTS() {
+		if request.IsHTTPS(r) && config.Opts.HasHSTS() {
 			w.Header().Set("Strict-Transport-Security", "max-age=31536000")
 		}
 
-		next.ServeHTTP(w, r.WithContext(ctx))
+		next.ServeHTTP(w, r)
 	})
 }

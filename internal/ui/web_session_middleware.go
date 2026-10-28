@@ -53,7 +53,7 @@ func (m *webSessionMiddleware) handle(next http.Handler) http.Handler {
 				response.HTMLServerError(w, r, err)
 				return
 			}
-			setSessionCookie(w, session, secret)
+			setSessionCookie(w, r, session, secret)
 		}
 
 		ctx := context.WithValue(r.Context(), request.WebSessionContextKey, session)

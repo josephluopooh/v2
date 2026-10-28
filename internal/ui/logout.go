@@ -24,7 +24,7 @@ func (h *handler) logout(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	setPreferencesCookie(w, user.Language, user.Theme)
+	setPreferencesCookie(w, r, user.Language, user.Theme)
 
 	response.HTMLRedirect(w, r, h.routePath("/"))
 }

@@ -6,6 +6,7 @@ package request // import "miniflux.app/v2/internal/http/request"
 import (
 	"net/http"
 
+	"miniflux.app/v2/internal/config"
 	"miniflux.app/v2/internal/model"
 )
 
@@ -22,7 +23,14 @@ const (
 	WebSessionContextKey
 	ClientIPContextKey
 	GoogleReaderTokenKey
+	HTTPSProxyContextKey
 )
+
+// IsHTTPS reports whether this request arrived over TLS or through a trusted
+// HTTPS reverse proxy, or HTTPS was explicitly enabled in the configuration.
+func IsHTTPS(r *http.Request) bool {
+	return r.TLS != nil || getContextBoolValue(r, HTTPSProxyContextKey) || config.Opts.HTTPS()
+}
 
 // WebSession returns the current web session from the request context, if present.
 func WebSession(r *http.Request) *model.WebSession {

@@ -35,10 +35,6 @@ func StartWebServer(store *storage.Storage, pool *worker.Pool) ([]*http.Server, 
 
 	targets := determineListenTargets(config.Opts.ListenAddr(), certDomain, certFile, keyFile)
 
-	if autocertTLSConfig != nil || anyTLS(targets) {
-		config.Opts.SetHTTPSValue(true)
-	}
-
 	// Create a single certificate loader shared by all TLS servers
 	// that use the same cert/key pair.
 	var certLoader *certificateLoader

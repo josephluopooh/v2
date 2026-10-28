@@ -34,19 +34,19 @@ func authenticateWebSession(w http.ResponseWriter, r *http.Request, store *stora
 		return err
 	}
 
-	setSessionCookie(w, session, secret)
+	setSessionCookie(w, r, session, secret)
 	return nil
 }
 
 // setSessionCookie writes the session cookie to the response with the
 // security attributes used by miniflux (HttpOnly, SameSite=Lax, Secure
 // when HTTPS).
-func setSessionCookie(w http.ResponseWriter, session *model.WebSession, secret string) {
+func setSessionCookie(w http.ResponseWriter, r *http.Request, session *model.WebSession, secret string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookieName,
 		Value:    session.ID + "." + secret,
 		Path:     cookiePath(),
-		Secure:   config.Opts.HTTPS(),
+		Secure:   request.IsHTTPS(r),
 		HttpOnly: true,
 		Expires:  time.Now().Add(config.Opts.CleanupRemoveSessionsInterval()),
 		SameSite: http.SameSiteLaxMode,
@@ -55,12 +55,12 @@ func setSessionCookie(w http.ResponseWriter, session *model.WebSession, secret s
 
 // setPreferencesCookie remembers the language and theme of a user who logs
 // out, so the login page keeps using them without keeping a session around.
-func setPreferencesCookie(w http.ResponseWriter, language, theme string) {
+func setPreferencesCookie(w http.ResponseWriter, r *http.Request, language, theme string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     preferencesCookieName,
 		Value:    language + "." + theme,
 		Path:     cookiePath(),
-		Secure:   config.Opts.HTTPS(),
+		Secure:   request.IsHTTPS(r),
 		HttpOnly: true,
 		Expires:  time.Now().Add(preferencesCookieLifetime),
 		SameSite: http.SameSiteLaxMode,
