@@ -824,9 +824,10 @@ function openOriginalLinkFromListView() {
     // Open the link
     openNewTab(originalLink.getAttribute("href"));
 
-    // Don't navigate or mark as read on starred page
+    // Follow the same mark-on-view preference as clicking the original link.
+    // Don't navigate or mark as read on the starred page.
     const isStarredPage = document.location.href === document.querySelector(':is(a, button)[data-page=starred]').href;
-    if (isStarredPage) return;
+    if (isStarredPage || originalLink.dataset.originalLink !== "true") return;
 
     // Navigate to next item
     goToListItem(1);
