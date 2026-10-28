@@ -873,6 +873,12 @@ function openSelectedItemAction() {
  * Unsubscribe from the feed of the currently selected item.
  */
 function handleRemoveFeedAction() {
+    const selectedFeedRemoveButton = document.querySelector(".current-item.feed-item .item-meta-icons-remove [data-confirm]");
+    if (selectedFeedRemoveButton) {
+        selectedFeedRemoveButton.click();
+        return;
+    }
+
     const unsubscribeLink = document.querySelector("[data-action=remove-feed]");
     if (unsubscribeLink) {
         sendPOSTRequest(unsubscribeLink.dataset.url).then(() => {
